@@ -1,8 +1,18 @@
 <template>
-    <div class="ui dimmer modals page modal-component" :class="dimmerClass" :style="{visibility, display, 'animation-duration': animationDuration+'ms'}">
-        <div class="ui modal" :class="modalClass" v-on-clickaway="clickAway" :style="{'margin-top': offsetY+'px', visibility, display,'animation-duration': animationDuration+'ms'}">
+    <div
+      @keydown.esc="close"
+      tabindex="-1"
+      class="ui dimmer modals page modal-component"
+      :class="dimmerClass" :style="{visibility, 'animation-duration': animationDuration+'ms'}"
+    >
+        <div
+          class="ui modal"
+          :class="modalClass"
+          v-on-clickaway="clickAway"
+          :style="{visibility, 'animation-duration': animationDuration+'ms'}"
+        >
             <i v-if="showCloseIcon" class="close icon" @click="close"></i>
-            
+
             <div class="header">
                 <slot name="header">
                 header
@@ -61,6 +71,10 @@ const props = {
         type: Number,
         default: 500
     },
+    closeOnClickAway: {
+      type: Boolean,
+      default: true
+    },
     showCloseIcon: {
         type: Boolean,
         default: false
@@ -89,7 +103,7 @@ const props = {
 }
 
 function buildAnimation (name, direction) {
-    return `transition animating ${name} ${direction? 'in' : 'out'} visible`
+    return `transition animating ${name} ${direction? 'in' : 'out'}`
 }
 
 function classBuilder (visualState, animation) {
@@ -98,10 +112,10 @@ function classBuilder (visualState, animation) {
             return `${buildAnimation(animation,true)} active`
 
         case opened:
-            return 'visible active'
+            return 'active'
 
         case closing:
-            return buildAnimation(animation,false)
+            return `${buildAnimation(animation,false)} active`
 
         case closed:
             return ''
@@ -117,7 +131,6 @@ export default {
 
     data () {
         return {
-            offsetY : 0,
             visualState: closed,
             hidden: true,
             loading: true
@@ -132,7 +145,6 @@ export default {
     mounted () {
         const modal = this.$el.querySelector('.ui.modal')
         this.modal = modal
-        this.offsetY = -modal.clientHeight / 2
         this.loading = false
         this.$el.addEventListener(eventAnimationEnd, this.onAnimationEnded, false)
     },
@@ -155,10 +167,18 @@ export default {
                 return
             }
             this.$emit('clickAwayModal')
+
+            if (this.closeOnClickAway) {
+              this.close();
+            }
         },
 
         onAnimationEnded () {
             this.visualState = this.opened ? opened : closed
+
+            if (this.opened) {
+                this.$el.focus()
+            }
         }
     },
 
@@ -181,7 +201,7 @@ export default {
         },
 
         visibility () {
-            return this.loading? 'hidden' : 'visible'
+            return this.loading ? 'hidden' : 'visible'
         },
 
         display () {
